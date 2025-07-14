@@ -10,9 +10,9 @@ We are leading the transformation of chemical analysis on a global scale by maki
 
 Scitrix develops innovative solutions based on Artificial Intelligence to democratize access to Nuclear Magnetic Resonance (NMR). Our Freemium SaaS platform allows industry and the scientific community to analyze compounds faster, more accurately, and sustainably.
 
-- 🧪 **Potentiate Benchtop Equipment**: We give advanced analytical capabilities to low-field NMR equipment.
+- 🧪 **Potentiate Instrumental Capabilities**: We give advanced analytical solutions to NMR equipment.
 - 🔬 **Reduce Time and Errors**: We automate complex structural analysis, minimizing errors in compound identification.
-- 🧑‍🔬 **Eliminate the Need for Experts**: Our intuitive platform guides users, removing the need for highly specialized personnel.
+- 🧑‍🔬 **Reduce the Need for Experts**: Our intuitive platform guides users, reduce the need for highly specialized personnel by automatition.
 
 ### Our Vision
 
