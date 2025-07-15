@@ -12,6 +12,8 @@ The goal of these files is to make the contribution process smoother, more consi
   - `config.yml`: Configures the "New Issue" page, directing users to the correct templates and disabling blank issues to encourage structured feedback.
   - `bug_report.yml`: A form for submitting detailed bug reports.
   - `feature_request.yml`: A form for proposing new features.
+  - `spike.yml`: A template for research tasks (spikes) intended to resolve uncertainty.
+  - `tech_task.yml`: A form for creating technical tasks like refactoring, dependency updates, or infrastructure improvements.
 - **`pull_request_template.md`**: This is the default template that will be pre-filled in the description of any new pull request. It includes a checklist to ensure contributions are complete and follow project guidelines.
 
 ## Further Reading
