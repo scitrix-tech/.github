@@ -27,28 +27,16 @@ This is the **org-level** CLAUDE.md for the Scitrix workspace. It defines cross-
 
 ### Repo Relationships
 
-```
-                    ┌─────────┐
-                    │ website │  (marketing, investment form)
-                    └────┬────┘
-                         │ links to MIA
-                         v
-                    ┌─────────┐
-                    │   mia   │  (web app, Supabase auth)
-                    └────┬────┘
-                         │ API calls (schema:update syncs OpenAPI)
-                         v
-                    ┌─────────┐     ┌─────────────────┐
-                    │ backend │────>│  scitrix-logger  │
-                    └────┬────┘     └─────────────────┘
-                         │            (git dependency)
-                    uses S3 + MongoDB
-
-    ┌─────┐
-    │ iac │──── reusable workflows consumed by backend, mia, website
-    └──┬──┘    + gitops/ manifests watched by ArgoCD
-       │
-       └── CI dispatches update-image-tag -> ArgoCD deploys
+```mermaid
+graph TD
+    website["website<br/><small>marketing, investment form</small>"] -->|links to| mia
+    mia["mia<br/><small>web app, Supabase auth</small>"] -->|API calls<br/>schema:update syncs OpenAPI| backend
+    backend["backend<br/><small>DP4+ API</small>"] -->|git dependency| logger["scitrix-logger"]
+    backend -->|uses| storage["S3 + MongoDB"]
+    iac -->|reusable workflows| backend
+    iac -->|reusable workflows| mia
+    iac -->|reusable workflows| website
+    iac -->|gitops manifests| argocd["ArgoCD"]
 ```
 
 ### Environments
@@ -64,9 +52,10 @@ This is the **org-level** CLAUDE.md for the Scitrix workspace. It defines cross-
 
 ### Request Lifecycle
 
-```
-User -> website (static marketing)
-User -> mia (auth via Supabase) -> backend API (computation) -> MongoDB / S3
+```mermaid
+graph LR
+    User -->|static marketing| website
+    User -->|auth via Supabase| mia -->|computation| backend -->|storage| db["MongoDB / S3"]
 ```
 
 1. **Website**: Static marketing site. Links users to MIA for the actual application.
@@ -123,16 +112,10 @@ poetry update scitrix-logger
 
 ### Branch Model
 
-```
-main (production)
- ^
- | PR: promote when ready
- |
-develop (testing)
- ^
- | PR: feature complete
- |
-feature branches
+```mermaid
+graph BT
+    feature["feature branches"] -->|PR: feature complete| develop["develop (testing)"]
+    develop -->|PR: promote when ready| main["main (production)"]
 ```
 
 ### Branch Naming
@@ -183,8 +166,9 @@ After CI pushes a Docker image, it updates the image tag in the IAC repo's gitop
 
 **Flow:**
 
-```
-CI pushes image (tag: <sha>) -> CI updates iac/gitops/<env>/<app>.yaml -> ArgoCD detects change -> Deploy
+```mermaid
+graph LR
+    CI["CI pushes image<br/><small>tag: sha</small>"] --> gitops["Updates iac/gitops/<br/>env/app.yaml"] --> ArgoCD["ArgoCD detects<br/>change"] --> Deploy
 ```
 
 **GitOps manifest location** (in IAC repo):
@@ -278,16 +262,15 @@ Backend uses its own `pr-review.yml` (includes code analysis + summary comment i
 
 ### Workflow
 
-```
-/speckit.constitution  ->  Define org principles (once)
-        |
-/speckit.specify       ->  Write feature spec (user stories, scenarios, requirements)
-        |                  Output: specs/<feature>/spec.md
-/speckit.plan          ->  Technical plan (data models, API contracts, architecture)
-        |                  Output: specs/<feature>/plan.md, data-model.md, contracts/
-/speckit.tasks         ->  Break into ordered, dependency-aware tasks
-        |                  Output: specs/<feature>/tasks.md
-/speckit.implement     ->  AI executes tasks following the spec
+```mermaid
+graph TD
+    constitution["/speckit.constitution<br/><small>Define org principles (once)</small>"]
+    specify["/speckit.specify<br/><small>Write feature spec</small><br/><small>→ specs/feature/spec.md</small>"]
+    plan["/speckit.plan<br/><small>Technical plan</small><br/><small>→ plan.md, data-model.md, contracts/</small>"]
+    tasks["/speckit.tasks<br/><small>Break into ordered tasks</small><br/><small>→ specs/feature/tasks.md</small>"]
+    implement["/speckit.implement<br/><small>AI executes tasks following the spec</small>"]
+
+    constitution --> specify --> plan --> tasks --> implement
 ```
 
 ### Constitution
