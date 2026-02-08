@@ -372,34 +372,9 @@ ALL documentation, code comments, commit messages, PR descriptions, and specs MU
 
 ### Conventional Commits
 
-```
-<type>(<scope>): <description>
+Detailed format, types, scopes, and guidelines in `.claude/rules/commit-conventions.md` (auto-discovered).
 
-[optional body]
-
-[optional footer(s)]
-```
-
-**Types**:
-
-| Type | Use When |
-|------|----------|
-| `feat` | New feature for the user |
-| `fix` | Bug fix |
-| `docs` | Documentation only |
-| `style` | Formatting, no logic change |
-| `refactor` | Code restructuring, no behavior change |
-| `perf` | Performance improvement |
-| `test` | Adding or updating tests |
-| `chore` | Maintenance (deps, configs) |
-| `ci` | CI/CD changes |
-| `build` | Build system changes |
-
-**Guidelines**:
-
-- Subject line: imperative mood, lowercase, no period, max 72 chars
-- Body: explain **why**, not what (the diff shows what)
-- Breaking changes: add `BREAKING CHANGE:` footer or `!` after type
+Quick reference: `type(scope): description` — imperative mood, lowercase, no period, max 72 chars.
 
 ### Branch Naming
 
@@ -407,26 +382,11 @@ See the Unified GitFlow section above.
 
 ### DRY Principle
 
-Canonical reference: `.github/.claude/rules/dry-principle.md`
-
-Key rules:
-
-- Extract reusable logic if used 3+ times
-- Centralize configuration
-- Use component composition over duplication
-- Avoid over-abstraction: 3 similar lines is better than a premature abstraction
+Detailed guidelines in `.claude/rules/dry-principle.md` (auto-discovered).
 
 ### Clean Code
 
-Canonical reference: `.github/.claude/rules/clean-code.md`
-
-Key rules:
-
-- Constants over magic numbers
-- Meaningful names
-- Single responsibility
-- Smart comments (explain why, not what)
-- Continuous refactoring
+Detailed guidelines in `.claude/rules/clean-code.md` (auto-discovered).
 
 ### Code Quality Tools by Stack
 

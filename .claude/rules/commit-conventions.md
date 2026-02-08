@@ -19,6 +19,7 @@ This document defines the commit message format for Scitrix projects, following 
 - **perf**: Performance improvements.
 - **test**: Adding or updating tests.
 - **chore**: Maintenance tasks, dependency updates.
+- **ci**: CI/CD pipeline changes.
 - **route**: Adding or modifying routes.
 - **middleware**: Changes to middleware.
 - **config**: Configuration changes.
@@ -39,6 +40,6 @@ This document defines the commit message format for Scitrix projects, following 
 - **deploy**: Deployment configurations.
 
 ## Commit Message Guidelines
-- **Description**: Use imperative mood (e.g., "add" not "added"). Do not capitalize. No period at the end. Keep it under 50 characters.
-- **Body**: Explain the "what" and "why". Wrap at 72 characters.
+- **Description**: Use imperative mood (e.g., "add" not "added"). Do not capitalize. No period at the end. Keep it under 72 characters.
+- **Body**: Explain the "why", not the "what" (the diff shows what). Wrap at 72 characters.
 - **Footer**: Reference breaking changes (`BREAKING CHANGE:`) or close issues (`Closes #123`).
