@@ -256,7 +256,7 @@ Backend uses its own `pr-review.yml` (includes code analysis + summary comment i
 
 ### Overview
 
-[spec-kit](https://github.com/outline/spec-kit) provides a structured workflow for defining features as specifications before implementation. This ensures AI agents (and humans) have clear, unambiguous requirements.
+[spec-kit](https://github.com/github/spec-kit) provides a structured workflow for defining features as specifications before implementation. This ensures AI agents (and humans) have clear, unambiguous requirements.
 
 **Integration scope**: Root workspace (cross-repo specs) + backend + mia + website.
 
