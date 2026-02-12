@@ -23,6 +23,7 @@ This is the **org-level** CLAUDE.md for the Scitrix workspace. It defines cross-
 | `mia` | Next.js 15, TypeScript 5, Supabase | Molecular Intelligence Assistant (web app) | `pnpm dev` | PNPM 9 |
 | `website` | React 19, Vite 6, TypeScript, Three.js | Marketing website with 3D hero | `npm run dev` | NPM |
 | `scitrix-logger` | Python 3.12, Poetry | Structured logging library for Python services | `poetry run pytest` | Poetry |
+| `kb` | MkDocs Material, Python 3.12, Poetry | Unified knowledge base (docs site) | `poetry run mkdocs serve` | Poetry |
 | `iac` | GitHub Actions YAML | Reusable CI/CD workflow templates + GitOps manifests for ArgoCD | N/A | N/A |
 
 ### Repo Relationships
@@ -33,9 +34,12 @@ graph TD
     mia["mia<br/><small>web app, Supabase auth</small>"] -->|API calls<br/>schema:update syncs OpenAPI| backend
     backend["backend<br/><small>DP4+ API</small>"] -->|git dependency| logger["scitrix-logger"]
     backend -->|uses| storage["S3 + MongoDB"]
+    kb["kb<br/><small>knowledge base</small>"] -->|documents| backend
+    kb -->|documents| mia
     iac -->|reusable workflows| backend
     iac -->|reusable workflows| mia
     iac -->|reusable workflows| website
+    iac -->|reusable workflows| kb
     iac -->|gitops manifests| argocd["ArgoCD"]
 ```
 
@@ -147,7 +151,7 @@ Examples:
 
 ### The Standard Pipeline
 
-All deployable repos (backend, mia, website) MUST implement this pipeline:
+All deployable repos (backend, mia, website, kb) MUST implement this pipeline:
 
 | Event | Jobs | Artifact |
 |-------|------|----------|
@@ -180,10 +184,12 @@ iac/
       backend.yaml    # image tag for testing environment
       mia.yaml
       website.yaml
+      kb.yaml
     production/
       backend.yaml    # image tag for production environment
       mia.yaml
       website.yaml
+      kb.yaml
 ```
 
 Each file contains the image reference that ArgoCD reads:
@@ -227,26 +233,26 @@ Backend uses its own `pr-review.yml` (includes code analysis + summary comment i
 
 | Template | Purpose | Consumers |
 |----------|---------|-----------|
-| `build-push-generic-template.yml` | Build, scan (Trivy), push Docker image to any registry | backend, mia, website |
-| `pr-validation-template.yml` | Conventional Commits validation on PRs (comment + optional blocking) | mia, website |
-| `update-gitops-template.yml` | Dispatch `update-image-tag` event to IAC repo (consumer-facing) | backend, mia, website |
+| `build-push-generic-template.yml` | Build, scan (Trivy), push Docker image to any registry | backend, mia, website, kb |
+| `pr-validation-template.yml` | Conventional Commits validation on PRs (comment + optional blocking) | mia, website, kb |
+| `update-gitops-template.yml` | Dispatch `update-image-tag` event to IAC repo (consumer-facing) | backend, mia, website, kb |
 | `gitops-webhook.yml` | Receive dispatch event, update gitops manifests, push (IAC-internal) | IAC (self) |
-| `webhook-notification.yml` | Notify webhook on CI failure | backend, mia, website |
+| `webhook-notification.yml` | Notify webhook on CI failure | backend, mia, website, kb |
 | `deploy-template.yml` | Deploy to EKS cluster via kubectl (legacy, pre-ArgoCD) | - |
 | `build-push-template.yml` | Build & push to AWS ECR (deprecated) | - |
-| `cleanup-dockerhub-template.yml` | Prune old Docker Hub image tags | backend, mia, website |
+| `cleanup-dockerhub-template.yml` | Prune old Docker Hub image tags | backend, mia, website, kb |
 
 ### Required Secrets per Repo
 
 | Secret | Purpose | Repos |
 |--------|---------|-------|
-| `IAC_REPO_TOKEN` | PAT to trigger `repository_dispatch` on IAC repo | backend, mia, website |
-| `DOCKERHUB_USERNAME` | Docker Hub registry username | backend, website |
-| `DOCKERHUB_TOKEN` | Docker Hub registry password/token | backend, website |
+| `IAC_REPO_TOKEN` | PAT to trigger `repository_dispatch` on IAC repo | backend, mia, website, kb |
+| `DOCKERHUB_USERNAME` | Docker Hub registry username | backend, website, kb |
+| `DOCKERHUB_TOKEN` | Docker Hub registry password/token | backend, website, kb |
 | `DOCKER_REGISTRY_USERNAME` | Docker registry username (Docker Hub) | mia |
 | `DOCKER_REGISTRY_PASSWORD` | Docker registry password/token (Docker Hub) | mia |
 | `ACCESS_TOKEN` | GitHub PAT for private repo access (scitrix-logger) | backend, scitrix-logger |
-| `NOTIFY_WEBHOOK_URL` | Webhook URL for CI failure alerts | backend, mia, website |
+| `NOTIFY_WEBHOOK_URL` | Webhook URL for CI failure alerts | backend, mia, website, kb |
 
 > **Note**: MIA uses different secret names for Docker registry credentials (`DOCKER_REGISTRY_*` vs `DOCKERHUB_*`). Both point to Docker Hub.
 
@@ -388,6 +394,37 @@ Detailed guidelines in `.claude/rules/dry-principle.md` (auto-discovered).
 
 Detailed guidelines in `.claude/rules/clean-code.md` (auto-discovered).
 
+### Claude Code Configuration
+
+Every repo MUST have these two files to ensure Claude Code automatically discovers and applies org-level rules:
+
+**`.claude/settings.json`** — Shared permissions (committed to git, shared with team):
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Read(.claude/rules/**)",
+      "Read(../.github/.claude/rules/**)"
+    ]
+  }
+}
+```
+
+This auto-allows Claude to read both repo-level rules and org-level rules without prompting.
+
+> **Note**: This is different from `.claude/settings.local.json` which is personal, listed in `.gitignore`, and NOT committed.
+
+**`.claude/rules/org-rules.md`** — References to org-level rules:
+
+```markdown
+@../../.github/.claude/rules/commit-conventions.md
+@../../.github/.claude/rules/dry-principle.md
+@../../.github/.claude/rules/clean-code.md
+```
+
+The `@` references cause Claude to load the org-level rule files when working inside the repo. Additional repo-specific rules live alongside this file in `.claude/rules/`.
+
 ### Code Quality Tools by Stack
 
 **Python repos** (backend, scitrix-logger):
@@ -522,4 +559,5 @@ Fast lookup for key entry points (details in each repo's CLAUDE.md):
 | mia | `src/app/[locale]/layout.tsx` | `next.config.ts` | `src/app/[locale]/` |
 | website | `src/index.tsx` | `src/vite.config.ts` | `src/pages/` |
 | scitrix-logger | `scitrix_logger/logger.py` | N/A | N/A |
+| kb | `docs/` | `mkdocs.yml` | `docs/` (content sections) |
 | iac | N/A | N/A | `.github/workflows/` |
