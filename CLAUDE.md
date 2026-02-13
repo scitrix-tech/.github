@@ -54,6 +54,8 @@ graph TD
 
 ## Cross-Repo Architecture
 
+> Full documentation: [Scitrix Knowledge Base](https://kb.scitrix.tech/architecture/)
+
 ### Request Lifecycle
 
 ```mermaid
@@ -110,6 +112,8 @@ poetry update scitrix-logger
 
 ## Unified GitFlow
 
+> Full documentation: [Scitrix Knowledge Base](https://kb.scitrix.tech/process/gitflow/)
+
 **This branching strategy applies to ALL repos.**
 
 > **Pending**: scitrix-logger's default branch on GitHub is still `master`. The CI workflows have already been updated to target `main`. The remote branch rename (`master` -> `main`) must be done on GitHub to complete the migration.
@@ -148,6 +152,8 @@ Examples:
 ---
 
 ## Unified CI/CD Pipeline
+
+> Full documentation: [Scitrix Knowledge Base](https://kb.scitrix.tech/operations/cicd-pipeline/)
 
 ### The Standard Pipeline
 
@@ -259,6 +265,8 @@ Backend uses its own `pr-review.yml` (includes code analysis + summary comment i
 ---
 
 ## Specification-Driven Development with spec-kit
+
+> Full documentation: [Scitrix Knowledge Base](https://kb.scitrix.tech/process/spec-kit-workflow/)
 
 ### Overview
 
@@ -372,6 +380,8 @@ This workflow does not exist yet in IAC - it needs to be created as part of the 
 
 ## Shared Conventions
 
+> Full documentation: [Scitrix Knowledge Base](https://kb.scitrix.tech/conventions/)
+
 ### Language
 
 ALL documentation, code comments, commit messages, PR descriptions, and specs MUST be written in **English**.
@@ -472,6 +482,8 @@ Follow the format established in `backend/docs/adrs/`:
 ---
 
 ## Cross-Repo Coordination Playbooks
+
+> Full documentation: [Scitrix Knowledge Base](https://kb.scitrix.tech/process/cross-repo-playbooks/)
 
 ### 1. New Backend API Endpoint
 
