@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        repo: [backend, mia, website, kb]
+        repo: [backend, mia-nmr, website, kb]
     name: Sync to ${{ matrix.repo }}
 
     steps:
