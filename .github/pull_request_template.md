@@ -11,6 +11,13 @@ Fixes # (issue)
 - [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
 - [ ] Documentation update
 
+## Specification
+
+<!-- If this feature required a spec (see spec-kit workflow), link it here. Delete this section if not applicable. -->
+
+- Spec directory: `specs/###-feature-name/`
+- [ ] Spec reviewed and approved before implementation
+
 ## How Has This Been Tested?
 
 Please describe the tests that you ran to verify your changes.
