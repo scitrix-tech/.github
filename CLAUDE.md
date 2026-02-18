@@ -270,35 +270,28 @@ Backend uses its own `pr-review.yml` (includes code analysis + summary comment i
 
 ### Overview
 
-[spec-kit](https://github.com/github/spec-kit) provides a structured workflow for defining features as specifications before implementation. This ensures AI agents (and humans) have clear, unambiguous requirements.
+[Spec-kit](https://github.com/github/spec-kit) provides a structured workflow for defining features as specifications before implementation. Specs live **in the feature branch** and are reviewed before code is written (shift-left review).
 
-**Integration scope**: Root workspace (cross-repo specs) + backend + mia + website.
+**Integration scope**: All repos (backend, mia, website, kb) + workspace root (cross-repo specs).
 
 ### Workflow
 
 ```mermaid
-graph TD
-    constitution["/speckit.constitution<br/><small>Define org principles (once)</small>"]
-    specify["/speckit.specify<br/><small>Write feature spec</small><br/><small>→ specs/feature/spec.md</small>"]
-    plan["/speckit.plan<br/><small>Technical plan</small><br/><small>→ plan.md, data-model.md, contracts/</small>"]
-    tasks["/speckit.tasks<br/><small>Break into ordered tasks</small><br/><small>→ specs/feature/tasks.md</small>"]
-    implement["/speckit.implement<br/><small>AI executes tasks following the spec</small>"]
-
-    constitution --> specify --> plan --> tasks --> implement
+graph LR
+    specify["specify"] --> plan["plan"] --> tasks["tasks"]
+    tasks --> review["spec review"]
+    review --> implement["implement"]
+    implement --> merge["code review"]
 ```
 
-### Constitution
+### Constitution (Inheritance Model)
 
-The org constitution lives at the root level and defines principles that apply across all repos. Each repo inherits via `.specify/memory/constitution.md`.
+The constitution uses an **inheritance model** with two files per repo:
 
-Core principles to encode:
+- **`org-constitution.md`**: Org-wide principles (synced from `.github` repo via CI, read-only)
+- **`constitution.md`**: Repo-specific principles (editable, extends org constitution)
 
-- English-only documentation
-- Conventional Commits
-- GitFlow (develop/main)
-- DRY (see `.github/.claude/rules/dry-principle.md`)
-- Clean code (see `.github/.claude/rules/clean-code.md`)
-- Spec-first for cross-repo features
+The org constitution lives in the `.github` repo at `.specify/memory/constitution.md` and is the authoritative source. CI syncs it to all repos as `org-constitution.md`. Each repo adds its own conventions in `constitution.md`.
 
 ### When Specs ARE Required
 
@@ -306,7 +299,7 @@ Core principles to encode:
 - Cross-repo features (anything touching backend + mia)
 - Database schema changes (MongoDB models, Supabase migrations)
 - Breaking changes to scitrix-logger
-- New features with user stories
+- New features requiring multiple acceptance scenarios
 
 ### When Specs Are NOT Required
 
@@ -316,24 +309,45 @@ Core principles to encode:
 - Refactoring that doesn't change public interfaces
 - Dependency updates
 
+### Single-Repo Spec Pattern
+
+For features within a single repo, specs live in the repo at `specs/###-feature-name/`. The `/speckit.specify` command creates the branch and spec directory automatically.
+
 ### Cross-Repo Spec Pattern
 
-For features that span multiple repos (e.g., the notebook feature):
+For features that span multiple repos:
 
-1. **Spec lives at root**: `.specify/specs/<feature>/spec.md`
-2. **Plan references files in both repos**: specific paths in backend and mia
-3. **Tasks are tagged per repo**: `[BACKEND]`, `[MIA]`, `[WEBSITE]`
-4. **Implementation order**: backend first -> `pnpm schema:update` in mia -> frontend implementation
+1. **Spec lives at workspace root**: `specs/###-feature-name/`
+2. **Tasks are tagged per repo**: `[BACKEND]`, `[MIA]`, `[WEBSITE]`
+3. **Implementation order**: backend first -> `pnpm schema:update` in mia -> frontend implementation
 
-Example of existing cross-repo spec (to be migrated to spec-kit format):
+### Branch Naming
 
-- `mia/BACKEND_REQUIREMENTS_NOTEBOOK.md` - notebook feature requirements with DB schema, API endpoints, auth rules, and error codes
+- Spec-required features: `###-feature-name` (created by `/speckit.specify`)
+- Non-spec changes: `type/scope/description` (manual, GitFlow convention)
 
-### Local Agent Workflow
+### Per-Repo Setup
+
+Each repo that uses spec-kit has:
+
+```
+<repo>/
+  .specify/
+    memory/
+      org-constitution.md   # Synced from .github repo (read-only)
+      constitution.md       # Repo-specific principles
+    templates/              # Spec, plan, tasks templates
+    scripts/bash/           # Feature creation and setup scripts
+  .claude/commands/
+    speckit.*.md            # 9 spec-kit commands
+  specs/                    # Feature specs (created per-feature)
+```
+
+### Agent Workflow
 
 ```bash
-# 1. Define the feature
-/speckit.specify
+# 1. Define the feature (creates branch + spec)
+/speckit.specify Add batch processing endpoint
 
 # 2. Create the technical plan
 /speckit.plan
@@ -341,40 +355,27 @@ Example of existing cross-repo spec (to be migrated to spec-kit format):
 # 3. Break into tasks
 /speckit.tasks
 
-# 4. Implement (AI follows the spec)
+# 4. Push + open draft PR for spec review (shift-left)
+
+# 5. After spec approval, implement
 /speckit.implement
 ```
 
----
+### Spec-Kit CI Workflows
 
-## Spec-Driven CI
+| Workflow | Trigger | Purpose |
+|----------|---------|---------|
+| `sync-speckit.yml` | Push to `main` (`.specify/**` or commands changed) | Propagates spec-kit files from `.github` to all repos via PRs |
+| `update-speckit-upstream.yml` | Manual (`workflow_dispatch`) | Pulls new spec-kit version from [upstream](https://github.com/github/spec-kit) into `.github` repo |
 
-### A. Spec Validation (Blocking, on PR)
+**Upstream update flow**: Run `update-speckit-upstream.yml` with the desired version tag → review and merge the PR to `main` → `sync-speckit.yml` auto-propagates to all repos.
 
-On every PR, validate that specs exist and are complete for relevant changes:
+### Spec-Driven CI (Future Work)
 
-- If backend API route files are changed, verify a spec exists in `.specify/specs/` with an API contracts section
-- If database models are changed, verify a spec exists with a data model section
-- Validate spec completeness: required sections include scenarios, requirements, and success criteria
-- Cross-reference: changes to multiple repos in the same feature should reference the same spec
+Planned capabilities (not yet implemented):
 
-### B. AI Agent Execution (Optional, Manual Trigger)
-
-A new reusable workflow to add to IAC: `spec-agent-template.yml`
-
-**Purpose**: Run an AI agent (Claude Code or configured alternative) against a spec for review, implementation, or validation.
-
-**Trigger**: `workflow_dispatch` with feature name as input
-
-**Capabilities**:
-
-- Spec review: validate spec quality and completeness
-- Implementation: generate code following the spec + plan + tasks
-- Validation: verify implementation matches spec acceptance criteria
-
-**Outputs**: PR with implementation, or review comments on an existing PR
-
-This workflow does not exist yet in IAC - it needs to be created as part of the spec-kit rollout.
+- **Spec validation on PR**: Verify spec-required changes include a complete spec
+- **AI agent execution** (`spec-agent-template.yml`): Automated spec review and validation
 
 ---
 
