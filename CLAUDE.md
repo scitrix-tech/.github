@@ -24,7 +24,7 @@ This is the **org-level** CLAUDE.md for the Scitrix workspace. It defines cross-
 | `website` | React 19, Vite 6, TypeScript, Three.js | Marketing website with 3D hero | `npm run dev` | NPM |
 | `scitrix-logger` | Python 3.12, Poetry | Structured logging library for Python services | `poetry run pytest` | Poetry |
 | `kb` | MkDocs Material, Python 3.12, Poetry | Unified knowledge base (docs site) | `poetry run mkdocs serve` | Poetry |
-| `iac` | GitHub Actions YAML | Reusable CI/CD workflow templates + GitOps manifests for ArgoCD | N/A | N/A |
+| `iac` | GitHub Actions YAML, Kustomize | Reusable CI/CD workflow templates + K8s manifests (ArgoCD watches `k8s/`) | N/A | N/A |
 
 ### Repo Relationships
 
@@ -40,7 +40,7 @@ graph TD
     iac -->|reusable workflows| mia
     iac -->|reusable workflows| website
     iac -->|reusable workflows| kb
-    iac -->|gitops manifests| argocd["ArgoCD"]
+    iac -->|k8s manifests| argocd["ArgoCD"]
 ```
 
 ### Environments
@@ -178,39 +178,47 @@ After CI pushes a Docker image, it updates the image tag in the IAC repo's gitop
 
 ```mermaid
 graph LR
-    CI["CI pushes image<br/><small>tag: sha</small>"] --> gitops["Updates iac/gitops/<br/>env/app.yaml"] --> ArgoCD["ArgoCD detects<br/>change"] --> Deploy
+    CI["CI pushes image<br/><small>tag: sha</small>"] --> gitops["Updates iac/k8s/<br/>namespace kustomization"] --> ArgoCD["ArgoCD detects<br/>change"] --> Deploy
 ```
 
 **GitOps manifest location** (in IAC repo):
 
+ArgoCD watches the `k8s/` directory. Each namespace has a `kustomization.yaml` with an `images:` section that controls deployed image tags:
+
 ```
 iac/
-  gitops/
-    testing/
-      backend.yaml    # image tag for testing environment
-      mia.yaml
-      website.yaml
-      kb.yaml
-    production/
-      backend.yaml    # image tag for production environment
-      mia.yaml
-      website.yaml
-      kb.yaml
+  k8s/
+    namespaces/
+      default/            # production environment
+        kustomization.yaml  # images: section with newTag per app
+      development/          # testing environment
+        kustomization.yaml
+      argocd/               # ArgoCD self-management
+        kustomization.yaml
 ```
 
-Each file contains the image reference that ArgoCD reads:
+Image tags are managed via Kustomize's `images:` transformer in each namespace's `kustomization.yaml`:
 
 ```yaml
-image:
-  repository: docker.io/scitrixtech/backend
-  tag: "<sha>"
+images:
+  - name: scitrixtech/backend
+    newTag: "<sha>"
+  - name: scitrixtech/mia-nmr
+    newTag: "<sha>"
 ```
+
+**Environment mapping** (CI environment -> k8s namespace):
+
+| CI Environment | K8s Namespace |
+|---------------|---------------|
+| `testing` | `development` |
+| `production` | `default` |
 
 **How updates work (webhook pattern):**
 
 1. Consumer repo CI calls `update-gitops-template.yml` (reusable workflow)
 2. The template fires a `repository_dispatch` event (`update-image-tag`) to the IAC repo
-3. IAC's `gitops-webhook.yml` receives the event, updates the file, and pushes using its own `GITHUB_TOKEN`
+3. IAC's `gitops-webhook.yml` receives the event, resolves the target namespace and image name, updates `newTag` in the namespace's `kustomization.yaml` using `yq`, and pushes
 4. ArgoCD detects the commit and deploys
 
 This decouples consumers from IAC's internal structure. The target IAC repo is configurable via the `iac_repo` input (defaults to `scitrix-tech/iac`). Concurrency is handled per app+environment to prevent conflicts.
@@ -242,7 +250,7 @@ Backend uses its own `pr-review.yml` (includes code analysis + summary comment i
 | `build-push-generic-template.yml` | Build, scan (Trivy), push Docker image to any registry | backend, mia, website, kb |
 | `pr-validation-template.yml` | Conventional Commits validation on PRs (comment + optional blocking) | mia, website, kb |
 | `update-gitops-template.yml` | Dispatch `update-image-tag` event to IAC repo (consumer-facing) | backend, mia, website, kb |
-| `gitops-webhook.yml` | Receive dispatch event, update gitops manifests, push (IAC-internal) | IAC (self) |
+| `gitops-webhook.yml` | Receive dispatch event, update `newTag` in namespace kustomization files, push (IAC-internal) | IAC (self) |
 | `webhook-notification.yml` | Notify webhook on CI failure | backend, mia, website, kb |
 | `deploy-template.yml` | Deploy to EKS cluster via kubectl (legacy, pre-ArgoCD) | - |
 | `build-push-template.yml` | Build & push to AWS ECR (deprecated) | - |
@@ -573,4 +581,4 @@ Fast lookup for key entry points (details in each repo's CLAUDE.md):
 | website | `src/index.tsx` | `src/vite.config.ts` | `src/pages/` |
 | scitrix-logger | `scitrix_logger/logger.py` | N/A | N/A |
 | kb | `docs/` | `mkdocs.yml` | `docs/` (content sections) |
-| iac | N/A | N/A | `.github/workflows/` |
+| iac | N/A | N/A | `.github/workflows/`, `k8s/` |
