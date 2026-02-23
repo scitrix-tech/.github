@@ -365,9 +365,13 @@ Each repo that uses spec-kit has:
 
 # 4. Push + open draft PR for spec review (shift-left)
 
-# 5. After spec approval, implement
+# 5. WAIT for at least one approving review on the spec PR
+
+# 6. After spec approval, implement
 /speckit.implement
 ```
+
+> **Spec approval is a mandatory gate.** Do NOT run `/speckit.implement` until the spec PR has at least one approving review. Warn the user if they ask to skip this.
 
 ### Spec-Kit CI Workflows
 
