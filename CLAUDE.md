@@ -243,6 +243,38 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`, `ci`
 
 Backend uses its own `pr-review.yml` (includes code analysis + summary comment in addition to conventional commits). MIA and website use IAC's `pr-validation-template.yml`.
 
+### Release Management
+
+Releases are automated via `release-tag-template.yml`. Each deployable repo has a `release.yml` workflow that:
+
+1. **Triggers** on push to `main` when the version file changes (`pyproject.toml` for Python repos, `package.json` for Node repos)
+2. **Reads** the version from the file
+3. **Calls** the IAC release template, which validates semver format, checks the tag doesn't already exist, and creates a git tag + GitHub Release with auto-generated notes from merged PRs
+
+**Version bump flow:**
+
+```
+1. Bump version in version file (pyproject.toml / package.json)
+2. PR to develop → merge → validate in testing
+3. PR develop → main → merge
+4. release.yml detects version file change → creates tag v{version} + GitHub Release
+```
+
+**Key behaviors:**
+- If the version didn't change (e.g., only deps updated in `package.json`), the tag already exists and the workflow is a no-op
+- Release notes are auto-generated from PRs merged since the previous tag
+- The `prerelease` flag can be set for pre-release versions (e.g., `1.0.0-rc.1`)
+- No secrets required — uses the default `GITHUB_TOKEN`
+
+**Version file locations:**
+
+| Repo | Version File | Format |
+|------|-------------|--------|
+| backend | `pyproject.toml` | `version = "X.Y.Z"` (both `[project]` and `[tool.poetry]` sections) |
+| mia | `package.json` | `"version": "X.Y.Z"` |
+| website | `package.json` | `"version": "X.Y.Z"` |
+| kb | `pyproject.toml` | `version = "X.Y.Z"` |
+
 ### IAC Workflow Catalog
 
 | Template | Purpose | Consumers |
@@ -254,6 +286,7 @@ Backend uses its own `pr-review.yml` (includes code analysis + summary comment i
 | `webhook-notification.yml` | Notify webhook on CI failure | backend, mia, website, kb |
 | `deploy-template.yml` | Deploy to EKS cluster via kubectl (legacy, pre-ArgoCD) | - |
 | `build-push-template.yml` | Build & push to AWS ECR (deprecated) | - |
+| `release-tag-template.yml` | Create git tag + GitHub Release with auto-generated notes | backend, mia, website, kb |
 | `cleanup-dockerhub-template.yml` | Prune old Docker Hub image tags | backend, mia, website, kb |
 
 ### Required Secrets per Repo
