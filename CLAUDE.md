@@ -287,21 +287,23 @@ Releases are automated via `release-tag-template.yml`. Each deployable repo has 
 | `deploy-template.yml` | Deploy to EKS cluster via kubectl (legacy, pre-ArgoCD) | - |
 | `build-push-template.yml` | Build & push to AWS ECR (deprecated) | - |
 | `release-tag-template.yml` | Create git tag + GitHub Release with auto-generated notes | backend, mia, website, kb |
-| `cleanup-dockerhub-template.yml` | Prune old Docker Hub image tags | backend, mia, website, kb |
+| `cleanup-dockerhub-template.yml` | Prune old Docker Hub image tags | backend, mia, website |
 
 ### Required Secrets per Repo
 
 | Secret | Purpose | Repos |
 |--------|---------|-------|
 | `IAC_REPO_TOKEN` | PAT to trigger `repository_dispatch` on IAC repo | backend, mia, website, kb |
-| `DOCKERHUB_USERNAME` | Docker Hub registry username | backend, website, kb |
-| `DOCKERHUB_TOKEN` | Docker Hub registry password/token | backend, website, kb |
+| `DOCKERHUB_USERNAME` | Docker Hub registry username | backend, website |
+| `DOCKERHUB_TOKEN` | Docker Hub registry password/token | backend, website |
 | `DOCKER_REGISTRY_USERNAME` | Docker registry username (Docker Hub) | mia |
 | `DOCKER_REGISTRY_PASSWORD` | Docker registry password/token (Docker Hub) | mia |
 | `ACCESS_TOKEN` | GitHub PAT for private repo access (scitrix-logger) | backend, scitrix-logger |
 | `NOTIFY_WEBHOOK_URL` | Webhook URL for CI failure alerts | backend, mia, website, kb |
 
 > **Note**: MIA uses different secret names for Docker registry credentials (`DOCKER_REGISTRY_*` vs `DOCKERHUB_*`). Both point to Docker Hub.
+>
+> **kb** pushes to the private GHCR package `ghcr.io/scitrix-tech/kb` with the workflow's own `GITHUB_TOKEN` (`packages: write`), so it needs no registry secret.
 
 ---
 
